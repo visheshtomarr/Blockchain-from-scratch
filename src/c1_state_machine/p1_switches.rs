@@ -41,7 +41,22 @@ impl StateMachine for WeirdSwitchMachine {
     type State = TwoSwitches;
     type Transition = Toggle;
 
-    fn next_state(starting_state: &Self::State, transition: &Self::Transition) -> Self::State {
-        todo!()
+    fn next_state(starting_state: &TwoSwitches, transition: &Toggle) -> TwoSwitches {
+        match transition {
+            Toggle::FirstSwitch => TwoSwitches{
+                first_switch: !starting_state.first_switch,
+                // If the first switch is turned off, second switch automatically gets off.
+                second_switch: if starting_state.first_switch{
+                    false
+                }
+                else {
+                    starting_state.second_switch
+                }
+            },
+            Toggle::SecondSwitch => TwoSwitches{
+                first_switch: starting_state.first_switch,
+                second_switch: !starting_state.second_switch,
+            },
+        }
     }
 }
