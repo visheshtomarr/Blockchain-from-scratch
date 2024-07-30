@@ -1,6 +1,8 @@
 //! This module is all about modeling phenomena and systems as state machines. We begin with a few simple
 //! examples, and then proceed to build bigger and more complex state machines all implementing the same simple interface.
 
+mod p1_switches;
+
 /// A state machine - Generic over the transition type 
 pub trait StateMachine {
     /// The States that can be occupied by this machine.
