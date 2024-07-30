@@ -60,3 +60,100 @@ impl StateMachine for WeirdSwitchMachine {
         }
     }
 }
+
+#[cfg(test)]
+#[test]
+fn sm_1_light_switch_toggles_off() {
+    // The starting state of "LightSwitch" was true, i.e., it was "ON".
+    // The next state will be false, i.e., "OFF".
+    assert!(!LightSwitch::next_state(&true, &())) ;
+}
+
+#[test]
+fn sm_1_light_switch_toggles_on() {
+    // The starting state of "LightSwitch" was false, i.e., it was "OFF".
+    // The next state will be true, i.e., "ON".
+    assert!(LightSwitch::next_state(&false, &())) ;
+}
+
+#[test]
+fn sm_1_two_switches_first_goes_on() {
+    let state = TwoSwitches {
+        first_switch: false,
+        second_switch: false,
+    };
+
+    assert_eq!(
+        WeirdSwitchMachine::next_state(&state, &Toggle::FirstSwitch),
+        TwoSwitches {
+            first_switch: true,
+            second_switch: false,
+        }
+    );
+}
+
+#[test]
+fn sm_1_two_switches_first_goes_off_second_was_on() {
+    // This is the special case. We have to make sure the second one goes off with it.
+    let state = TwoSwitches {
+        first_switch: true,
+        second_switch: true,
+    };
+
+    assert_eq!(
+        WeirdSwitchMachine::next_state(&state, &Toggle::FirstSwitch),
+        TwoSwitches {
+            first_switch: false,
+            second_switch: false,
+        }
+    );
+}
+
+#[test]
+fn sm_1_two_switches_first_goes_off_second_was_off() {
+    // This is adjacent to the special case. We have to make sure the second one stays off.
+    let state = TwoSwitches {
+        first_switch: true,
+        second_switch: false,
+    };
+
+    assert_eq!(
+        WeirdSwitchMachine::next_state(&state, &Toggle::FirstSwitch),
+        TwoSwitches {
+            first_switch: false,
+            second_switch: false,
+        }
+    );
+}
+
+#[test]
+fn sm_1_two_switches_second_goes_on() {
+    let state = TwoSwitches {
+        first_switch: false,
+        second_switch: false,
+    };
+
+    assert_eq!(
+        WeirdSwitchMachine::next_state(&state, &Toggle::SecondSwitch),
+        TwoSwitches {
+            first_switch: false,
+            second_switch: true,
+        }
+    );
+}
+
+#[test]
+fn sm_1_two_switches_second_goes_off() {
+    let state = TwoSwitches {
+        first_switch: true,
+        second_switch: true,
+    };
+
+    assert_eq!(
+        WeirdSwitchMachine::next_state(&state, &Toggle::SecondSwitch),
+        TwoSwitches {
+            first_switch: true,
+            second_switch: false,
+        }
+    );
+}
