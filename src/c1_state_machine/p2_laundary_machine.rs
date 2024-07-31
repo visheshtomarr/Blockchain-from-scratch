@@ -34,3 +34,32 @@ pub enum ClothesAction {
     /// If they were dirty to begin with, they will still be dirty after drying.
     Dry,
 }
+
+impl StateMachine for ClothesMachine {
+    type State = ClothesState;
+    type Transition = ClothesAction;
+    
+    fn next_state(starting_state: &ClothesState, transition: &ClothesAction) -> ClothesState {
+        use ClothesAction::* ;
+        use ClothesState::* ;
+
+        match (starting_state, transition) {
+            (Clean(1),_) => Tattered,
+            (Dirty(1),_) => Tattered,
+            (Wet(1),_) => Tattered,
+            (Tattered,_) => Tattered,
+
+            (Clean(n), Dry) => Clean(n-1),
+            (Clean(n), Wear) => Dirty(n-1),
+            (Clean(n), Wash) => Wet(n-1),
+
+            (Dirty(n), Dry) => Dirty(n-1),
+            (Dirty(n), Wear) => Dirty(n-1),
+            (Dirty(n), Wash) => Wet(n-1),
+
+            (Wet(n), Wash) => Wet(n-1),
+            (Wet(n), Wear) => Dirty(n-1),
+            (Wet(n),Dry) => Clean(n-1), 
+        }
+    }
+}
