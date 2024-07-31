@@ -2,6 +2,7 @@
 //! examples, and then proceed to build bigger and more complex state machines all implementing the same simple interface.
 
 mod p1_switches;
+mod p2_laundary_machine;
 
 /// A state machine - Generic over the transition type 
 pub trait StateMachine {
