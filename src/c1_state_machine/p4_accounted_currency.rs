@@ -74,12 +74,12 @@ impl StateMachine for AccountedCurrency {
                     new_state.remove(burner) ;
                 }
                 else {
-                    new_state.insert(*burner, *amount) ;
+                    new_state.insert(*burner, new_amount) ;
                 }
             }
             Transfer { sender, receiver, amount} => {
                 // If the sender or receiver is unregistered, we don't transfer anything.
-                if !new_state.contains_key(sender) || !new_state.contains_key(receiver) {
+                if !new_state.contains_key(sender) {
                     return new_state;
                 }
 
@@ -115,7 +115,7 @@ impl StateMachine for AccountedCurrency {
 
                     // Calculate the updated balance of receiver and sender.
                     let new_amount_of_sender = old_amount_of_sender.saturating_sub(*amount) ;
-                    let new_amount_of_receiver = old_amount_of_receiver.saturating_sub(*amount) ;
+                    let new_amount_of_receiver = old_amount_of_receiver.saturating_add(*amount) ;
                     if new_amount_of_sender <= 0 {
                         new_state.remove(sender) ;
                     } else {
@@ -127,4 +127,280 @@ impl StateMachine for AccountedCurrency {
         }
         new_state
     }
+}
+
+#[cfg(test)]
+#[test]
+fn sm_4_mint_creates_account() {
+    let start = HashMap::new() ;
+    let end = AccountedCurrency::next_state(
+        &start, 
+        &AccountingTransaction::Mint { 
+            minter: User::Alice, 
+            amount: 100 
+        }
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100)]) ;
+
+    assert_eq!(end, expected) ; 
+}
+
+#[test]
+fn sm_4_mint_creates_second_account() {
+    let start = HashMap::from([(User::Alice, 100)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Mint {
+            minter: User::Bob,
+            amount: 50,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_mint_increases_balance() {
+    let start = HashMap::from([(User::Alice, 100)]) ;
+    let end = AccountedCurrency::next_state(
+        &start, 
+        &AccountingTransaction::Mint { 
+            minter: User::Alice, 
+            amount: 50, 
+        }
+    ) ;
+    let expected = HashMap::from([(User::Alice, 150)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_empty_mint() {
+    let start = HashMap::new() ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Mint {
+            minter: User::Alice,
+            amount: 0,
+        },
+    ) ;
+    let expected = HashMap::new() ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_simple_burn() {
+    let start = HashMap::from([(User::Alice, 100)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Burn {
+            burner: User::Alice,
+            amount: 50,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 50)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_burn_no_existential_deposit_left() {
+    let start = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Burn {
+            burner: User::Bob,
+            amount: 50,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_non_registered_burner() {
+    let start = HashMap::from([(User::Alice, 100)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Burn {
+            burner: User::Bob,
+            amount: 50,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_burn_more_than_balance() {
+    let start = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Burn {
+            burner: User::Bob,
+            amount: 100,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_empty_burn() {
+    let start = HashMap::from([(User::Alice, 100)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Burn {
+            burner: User::Alice,
+            amount: 0,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_burner_does_not_exist() {
+    let start = HashMap::from([(User::Alice, 100)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Burn {
+            burner: User::Bob,
+            amount: 50,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_simple_transfer() {
+    let start1 = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+    let end1 = AccountedCurrency::next_state(
+        &start1, 
+        &AccountingTransaction::Transfer { 
+            sender: User::Alice, 
+            receiver: User::Bob, 
+            amount: 20, 
+        }
+    ) ;
+    let expected1 = HashMap::from([(User::Alice, 80), (User::Bob, 70)]) ;
+
+    assert_eq!(end1, expected1) ;
+
+    let start2 = HashMap::from([(User::Alice, 80), (User::Bob, 70)]) ;
+    let end2 = AccountedCurrency::next_state(
+        &start2, 
+        &AccountingTransaction::Transfer { 
+            sender: User::Bob, 
+            receiver: User::Alice, 
+            amount: 50 
+        }
+    ) ;
+    let expected2 = HashMap::from([(User::Alice, 130), (User::Bob, 20)]) ;
+
+    assert_eq!(end2, expected2) ;
+}
+
+#[test]
+fn sm_4_send_to_same_user() {
+    let start = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Transfer {
+            sender: User::Bob,
+            receiver: User::Bob,
+            amount: 10,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_insufficient_balance_transfer() {
+    let start = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Transfer {
+            sender: User::Bob,
+            receiver: User::Alice,
+            amount: 60,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_sender_not_registered() {
+    let start = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Transfer {
+            sender: User::Charlie,
+            receiver: User::Alice,
+            amount: 50,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_receiver_not_registered() {
+    let start = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Transfer {
+            sender: User::Alice,
+            receiver: User::Charlie,
+            amount: 50,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 50), (User::Bob, 50), (User::Charlie, 50)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_sender_to_empty_balance() {
+    let start = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Transfer {
+            sender: User::Bob,
+            receiver: User::Alice,
+            amount: 50,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 150)]) ;
+
+    assert_eq!(end, expected) ;
+}
+
+#[test]
+fn sm_4_transfer() {
+    let start = HashMap::from([(User::Alice, 100), (User::Bob, 50)]) ;
+    let end = AccountedCurrency::next_state(
+        &start,
+        &AccountingTransaction::Transfer {
+            sender: User::Bob,
+            receiver: User::Charlie,
+            amount: 50,
+        },
+    ) ;
+    let expected = HashMap::from([(User::Alice, 100), (User::Charlie, 50)]) ;
+
+    assert_eq!(end, expected) ;
 }
