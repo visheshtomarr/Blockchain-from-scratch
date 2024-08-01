@@ -4,6 +4,7 @@
 mod p1_switches;
 mod p2_laundary_machine;
 mod p3_atm;
+mod p4_accounted_currency;
 
 /// A state machine - Generic over the transition type 
 pub trait StateMachine {

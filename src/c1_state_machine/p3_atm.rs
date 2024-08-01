@@ -2,8 +2,6 @@
 //! The atm may fail to give you cash if it is empty or you haven't swiped your card, or you have
 //! entered the wrong pin.
 
-use std::ptr::hash;
-
 use super::StateMachine;
 
 /// The keys on the ATM keypad.
