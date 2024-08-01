@@ -44,6 +44,87 @@ impl StateMachine for AccountedCurrency {
     type Transition = AccountingTransaction;
 
     fn next_state(starting_state: &Balances, transition: &AccountingTransaction) -> Balances {
-        todo!()
+        use AccountingTransaction::* ;
+
+        let mut new_state = starting_state.clone() ;
+
+        match transition {
+            Mint { minter, amount } => {
+                // If the mint amount is equal to 0, we don't mint anything.
+                if *amount == 0 {
+                    return new_state;
+                }
+                let balances = new_state.entry(*minter).or_insert(0) ;
+                *balances += amount ;
+            }
+            Burn { burner, amount} => {
+                // If burner is not present in the Balances map, we don't burn anything.
+                if !new_state.contains_key(burner) {
+                    return new_state;
+                }
+                // Get old amount of burner.
+                let old_amount = *new_state.get(burner).unwrap() ;
+
+                // Calculate new amount for burner.
+                let new_amount = old_amount.saturating_sub(*amount);
+
+                // If the new amount results into less than or equal to zero, we remove the user, else,
+                // we update the Balances map with new amount.
+                if new_amount <= 0 {
+                    new_state.remove(burner) ;
+                }
+                else {
+                    new_state.insert(*burner, *amount) ;
+                }
+            }
+            Transfer { sender, receiver, amount} => {
+                // If the sender or receiver is unregistered, we don't transfer anything.
+                if !new_state.contains_key(sender) || !new_state.contains_key(receiver) {
+                    return new_state;
+                }
+
+                // Get balance amount of sender.
+                let old_amount_of_sender = *new_state.get(sender).unwrap() ;
+
+                // If the amount to be sent is greater than the balance amount of sender, 
+                // we don't transfer anyting.
+                if old_amount_of_sender < *amount {
+                    return new_state;
+                } 
+
+                // If the sender and receiver are same user, we don't transfer anything.
+                if new_state.get(sender) == new_state.get(receiver) {
+                    return new_state;
+                }
+
+                // If the receiver does not exist in the Balances map in the starting state, 
+                // we insert the receiver with balance amount, else, if the receiver is pre-existing,
+                // we get the old balance of receiver and update it.
+                if !new_state.contains_key(receiver) {
+                    new_state.insert(*receiver, *amount) ;
+                    let new_amount_of_sender = old_amount_of_sender.saturating_sub(*amount) ;
+                    if new_amount_of_sender <= 0 {
+                        new_state.remove(sender) ;
+                    }
+                    else {
+                        new_state.insert(*sender, new_amount_of_sender) ;
+                    }
+                } else {
+                    // Get balance of receiver.
+                    let old_amount_of_receiver = *new_state.get(receiver).unwrap() ;
+
+                    // Calculate the updated balance of receiver and sender.
+                    let new_amount_of_sender = old_amount_of_sender.saturating_sub(*amount) ;
+                    let new_amount_of_receiver = old_amount_of_receiver.saturating_sub(*amount) ;
+                    if new_amount_of_sender <= 0 {
+                        new_state.remove(sender) ;
+                    } else {
+                        new_state.insert(*sender, new_amount_of_sender) ;
+                    }
+                    new_state.insert(*receiver, new_amount_of_receiver) ;
+                }
+            }
+        }
+        new_state
     }
 }
