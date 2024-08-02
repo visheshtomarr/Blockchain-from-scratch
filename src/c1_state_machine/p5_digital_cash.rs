@@ -22,6 +22,7 @@ pub struct Bill {
 
 /// The State of the digital cash system. Primarily, it is just a set of circulating bills,
 /// but also a counter for the next serial number.
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct State {
     /// The set of currently circulating bills.
     bills: HashSet<Bill>,
@@ -50,13 +51,13 @@ impl State {
 
     // Increment serial by 1.
     pub fn increment_serial(&mut self) {
-        self.next_serial += 1 ;
+        self.next_serial += 1 
     }
 
     // Add new bill to the Bill's set.
     fn add_bill(&mut self, elem: Bill) {
         self.bills.insert(elem) ;
-        self.increment_serial() ; 
+        self.increment_serial() 
     }
 }
 
@@ -71,9 +72,9 @@ impl FromIterator<Bill> for State {
     }
 }
 
-impl <const N: usize> From<[Bill; N]> for State {
+impl<const N: usize> From<[Bill; N]> for State {
     fn from(value: [Bill; N]) -> Self {
-        State::from(value)
+        State::from_iter(value)
     }
 }
 
@@ -98,6 +99,107 @@ impl StateMachine for DigitalCashSystem {
     type Transition = CashTransaction;
 
     fn next_state(starting_state: &Self::State, transition: &Self::Transition) -> Self::State {
-        todo!()
+        use CashTransaction::* ;
+
+        let mut new_state = starting_state.clone() ;
+        match transition {
+            Mint { minter, amount} => {
+                let new_bill = Bill {
+                    owner: *minter,
+                    amount: *amount,
+                    serial: new_state.next_serial(),
+                } ;
+                new_state.add_bill(new_bill) ;
+                return new_state ;
+            },
+            Transfer { spends, receives } => {
+                // If 'spends' is empty, no change in state.
+                if spends.is_empty() {
+                    return new_state ;
+                }
+
+                // If 'receives' is empty, we return empty bill in current state.
+                if receives.is_empty() {
+                    new_state.bills = HashSet::default() ;
+                    return new_state ;
+                }
+
+                // Closure to handle balance tranfer.
+                let transfer_process = |new_state: &mut State| -> Result<(), &'static str> {
+                    let spend_id = "spend" ;
+                    let receive_id = "receive" ;
+                    let mut visited_serial: HashMap<(&'static str, u64), bool> = HashMap::default() ;
+                    let mut total_spends: u64 = 0 ;
+                    let mut total_receives: u64 = 0 ;
+
+                    // Iterate over 'spends'
+                    for bill in spends {
+                        // If spend bill is not present in the current state, we return Err.
+                        if !new_state.bills.contains(bill) {
+                            return Err("Bill does not exist.");
+                        }
+
+                        // If spending serial is found to be a duplicate in current state, we return Err.
+                        if visited_serial.contains_key(&(spend_id, bill.serial)) {
+                            return Err("Invalid serial number.");
+                        }
+
+                        // Make the current spend bill as visited, so that we can check in receive later.
+                        visited_serial.insert((spend_id, bill.serial), true) ;
+
+                        // Remove spend bill from HashSet of current state after it is being spent.
+                        new_state.bills.remove(bill) ;
+
+                        // Update 'total_spends'.
+                        total_spends = total_spends.saturating_add(bill.amount) ;                          
+                    }
+
+                    // Iterate over 'receives'.
+                    for bill in receives {
+                        // If the serial value is invalid, we return Err.
+                        if bill.serial == u64::MAX {
+                            return Err("Invalid serial number with overflow.") ;
+                        }
+
+                        // If serial of spend or receive bill comes out to be same, identified by 'serial', we return Err.
+                        if visited_serial.contains_key(&(spend_id, bill.serial)) || 
+                            visited_serial.contains_key(&(receive_id, bill.serial)) {
+                                return Err("Spend and receive bills cannot be same");
+                            }
+                        
+                        // Make the current receive bill as visited.
+                        visited_serial.insert((receive_id, bill.serial), true) ;
+
+                        // If receive bill amount is greater than the 'total_spends', we return Err.
+                        if bill.amount > total_spends {
+                            return Err("Spending limit exceeded.");
+                        }
+
+                        // Update 'total_receives'.
+                        total_receives = total_receives.saturating_add(bill.amount) ;
+
+                        // Update 'total_spends'.
+                        total_spends = total_spends.saturating_sub(bill.amount) ;
+                    }
+                    
+                    // If total_receives is zero after above checks, we return Err.
+                    if total_receives == 0 {
+                        return Err("Output of 0 value");
+                    }
+
+                    Ok(()) 
+                } ;
+                match transfer_process(&mut new_state) {
+                    Ok(_) => {
+                        return new_state;
+                    },
+                    Err(err) => {
+                        // For debug purpose.
+                        println!("{}", err.to_string()) ;
+                    },
+                }
+            },
+        }
+        starting_state.clone()
     }
 }
