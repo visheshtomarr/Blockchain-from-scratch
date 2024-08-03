@@ -2,6 +2,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash,Hasher} ;
 
 mod c1_state_machine;
+mod c2_blockchain;
 
 #[allow(dead_code)]
 /// Simple helper function to do some hashing.
