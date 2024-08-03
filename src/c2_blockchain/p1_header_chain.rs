@@ -23,7 +23,13 @@ pub struct Header {
 impl Header {
     /// Returns a new valid genesis header.
     fn genesis() -> Self {
-        todo!("First")
+        Self {
+            parent: 0,
+            height: 0,
+            extrinsics_root: (),
+            state_root: (),
+            consensus_digest: (),
+        }
     }
 
     /// Create a return a new valid child header.
