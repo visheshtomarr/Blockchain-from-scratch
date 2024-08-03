@@ -48,7 +48,20 @@ impl Header {
     /// This method may assume that the block on which it is called is valid, but it
     /// must verify all the blocks in the slice.
     pub fn verify_child(&self, chain: &[Header]) -> bool {
-        todo!("Third")
+        let mut curr_hash = hash(self) ;
+        let mut curr_height = self.height ;
+        let mut chain_iter = chain.iter() ;
+        let mut is_verified = true ;
+
+        while let Some(header) = chain_iter.next() {
+            if curr_height.saturating_add(1) != header.height {
+                return false;
+            }
+            is_verified &= curr_hash == header.parent ;
+            curr_hash = hash(header) ;
+            curr_height = header.height ;
+        }
+        is_verified
     }
 
     // And finally a few functions to use the code we just
