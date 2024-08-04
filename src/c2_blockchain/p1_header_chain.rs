@@ -86,6 +86,11 @@ impl Header {
     /// The chain should start with a proper genesis header,
     /// but the entire chain should NOT be valid.
     pub fn build_an_invalid_chain() -> Vec<Header> {
-        todo!("Fifth")
+        let g = Header::genesis() ;
+        let b1 = g.child() ;
+        let b2 = b1.child() ;
+        let b2_prime = g.child() ;
+
+        vec![g, b1, b2_prime]
     }
 }
