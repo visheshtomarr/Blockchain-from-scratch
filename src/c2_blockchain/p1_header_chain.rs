@@ -47,7 +47,7 @@ impl Header {
     /// An "entire" chain can be verified by calling this method on a genesis header.
     /// This method may assume that the block on which it is called is valid, but it
     /// must verify all the blocks in the slice.
-    pub fn verify_child(&self, chain: &[Header]) -> bool {
+    pub fn verify_sub_chain(&self, chain: &[Header]) -> bool {
         let mut curr_hash = hash(self) ;
         let mut curr_height = self.height ;
         let mut chain_iter = chain.iter() ;
@@ -67,7 +67,7 @@ impl Header {
     // And finally a few functions to use the code we just
 
     /// Build and return a chain with exactly five blocks including the genesis block.
-    fn build_valid_chain_length_5() -> Vec<Header> {
+    pub fn build_valid_chain_length_5() -> Vec<Header> {
         let g = Header::genesis() ;
         let mut chain = Vec::new() ;
         
@@ -88,9 +88,81 @@ impl Header {
     pub fn build_an_invalid_chain() -> Vec<Header> {
         let g = Header::genesis() ;
         let b1 = g.child() ;
-        let b2 = b1.child() ;
+        let _b2 = b1.child() ;
         let b2_prime = g.child() ;
 
         vec![g, b1, b2_prime]
     }
+}
+
+#[cfg(test)]
+#[test]
+fn bc_1_genesis_block_parent() {
+    let g = Header::genesis() ;
+    assert_eq!(g.parent, 0) ;
+}
+
+#[test]
+fn bc_1_genesis_block_height() {
+    let g = Header::genesis() ;
+    assert_eq!(g.height, 0) ;
+}
+
+#[test]
+fn bc_1_child_block_parent() {
+    let g = Header::genesis() ;
+    let b1 = g.child() ;
+    assert_eq!(b1.parent, hash(&g)) ;
+}
+
+#[test]
+fn bc_1_child_block_height() {
+    let g = Header::genesis() ;
+    let b1 = g.child() ;
+    assert_eq!(b1.height, 1) ;
+}
+
+#[test]
+fn bc_1_verify_genesis_only() {
+    let g = Header::genesis() ;
+    assert!(g.verify_sub_chain(&[])) ;
+}
+
+#[test]
+fn bc_1_verify_three_blocks() {
+    let g = Header::genesis() ;
+    let b1 = g.child() ;
+    let b2 = b1.child() ;
+
+    assert!(g.verify_sub_chain(&[b1, b2])) ;
+}
+
+#[test] 
+fn bc_1_cant_verify_invalid_parent() {
+    let g = Header::genesis() ;
+    let mut b1 = g.child() ;
+    b1.parent = 5 ;
+
+    assert!(!g.verify_sub_chain(&[b1])) ;
+}
+
+#[test]
+fn bc_1_cant_verify_invalid_height() {
+    let g = Header::genesis() ;
+    let mut b1 = g.child() ;
+    b1.height = 5 ;
+
+    assert!(!g.verify_sub_chain(&[b1])) ;
+}
+
+#[test]
+fn bc_1_verify_chain_length_five() {
+    let chain = Header::build_valid_chain_length_5();
+    assert!(chain[0].verify_sub_chain(&chain[1..])) ;
+}
+
+#[test]
+fn bc_1_invalid_chain_is_really_invalid() {
+    let invalid_chain = Header::build_an_invalid_chain();
+    assert!(!invalid_chain[0].verify_sub_chain(&invalid_chain[1..])) ;
 }
