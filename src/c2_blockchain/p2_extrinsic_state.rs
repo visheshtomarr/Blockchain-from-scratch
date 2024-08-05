@@ -101,11 +101,11 @@ fn build_valid_chain(n: u64) -> Vec<Header> {
 fn build_an_invalid_chain() -> Vec<Header> {
     let g = Header::genesis() ;
     let b1 = g.child(0) ;
-    let _b2 = b1.child(1) ;
+    let b2 = b1.child(1) ;
 
-    let b2_prime = b1.child(2) ;
+    let b1_prime = g.child(2) ;
 
-    vec![g, b1, b2_prime]
+    vec![g, b1_prime, b2]
 }
 
 /// Build and return two header chains.
@@ -128,4 +128,128 @@ fn build_forked_chain() -> (Vec<Header>, Vec<Header>) {
     let b3_prime = b2.child(4) ;
 
     (vec![g.clone(), b1.clone(), b2.clone(), b3], vec![g, b1, b2, b3_prime])
+}
+
+#[cfg(test)]
+#[test]
+fn bc_2_genesis_block_height() {
+    let g = Header::genesis();
+    assert!(g.height == 0);
+}
+
+#[test]
+fn bc_2_genesis_block_parent() {
+    let g = Header::genesis();
+    assert!(g.parent == 0);
+}
+
+#[test]
+fn bc_2_genesis_block_extrinsic() {
+    // Typically genesis blocks do not have any extrinsics.
+    // In Substrate they never do. So our convention is to have the extrinsic be 0.
+    let g = Header::genesis();
+    assert!(g.extrinsic == 0);
+}
+
+#[test]
+fn bc_2_genesis_block_state() {
+    let g = Header::genesis();
+    assert!(g.state == 0);
+}
+
+#[test]
+fn bc_2_child_block_height() {
+    let g = Header::genesis();
+    let b1 = g.child(0);
+    assert!(b1.height == 1);
+}
+
+#[test]
+fn bc_2_child_block_parent() {
+    let g = Header::genesis();
+    let b1 = g.child(0);
+    assert!(b1.parent == hash(&g));
+}
+
+#[test]
+fn bc_2_child_block_extrinsic() {
+    let g = Header::genesis();
+    let b1 = g.child(7);
+    assert_eq!(b1.extrinsic, 7);
+}
+
+#[test]
+fn bc_2_child_block_state() {
+    let g = Header::genesis();
+    let b1 = g.child(7);
+    assert_eq!(b1.state, 7);
+}
+
+#[test]
+fn bc_2_verify_genesis_only() {
+    let g = Header::genesis();
+
+    assert!(g.verify_sub_chain(&[]));
+}
+
+#[test]
+fn bc_2_verify_three_blocks() {
+    let g = Header::genesis();
+    let b1 = g.child(5);
+    let b2 = b1.child(6);
+
+    assert_eq!(b2.state, 11);
+    assert!(g.verify_sub_chain(&[b1, b2]));
+}
+
+#[test]
+fn bc_2_cant_verify_invalid_parent() {
+    let g = Header::genesis();
+    let mut b1 = g.child(5);
+    b1.parent = 10;
+
+    assert!(!g.verify_sub_chain(&[b1]));
+}
+
+#[test]
+fn bc_2_cant_verify_invalid_number() {
+    let g = Header::genesis();
+    let mut b1 = g.child(5);
+    b1.height = 10;
+
+    assert!(!g.verify_sub_chain(&[b1]));
+}
+
+#[test]
+fn bc_2_cant_verify_invalid_state() {
+    let g = Header::genesis();
+    let mut b1 = g.child(5);
+    b1.state = 10;
+
+    assert!(!g.verify_sub_chain(&[b1]));
+}
+
+#[test]
+fn bc_2_invalid_chain_is_really_invalid() {
+    // This test chooses to use the student's own verify function.
+    // This should be relatively safe given that we have already tested that function.
+    let invalid_chain = build_an_invalid_chain();
+    assert!(!invalid_chain[0].verify_sub_chain(&invalid_chain[1..]))
+}
+
+#[test]
+fn bc_2_verify_forked_chain() {
+    let g = Header::genesis();
+    let (c1, c2) = build_forked_chain();
+
+    // Both chains have the same valid genesis block
+    assert_eq!(g, c1[0]);
+    assert_eq!(g, c2[0]);
+
+    // Both chains are individually valid
+    assert!(g.verify_sub_chain(&c1[1..]));
+    assert!(g.verify_sub_chain(&c2[1..]));
+
+    // The two chains are not identical
+    assert_ne!(c1.last(), c2.last());
 }
