@@ -53,7 +53,20 @@ impl Header {
     /// So in order for the block to verify, we must have that relationship between the extrinsic,
     /// the previous state and the current state.
     fn verify_sub_chain(&self, chain: &[Header]) -> bool {
-        todo!("Third")
+        let mut prev_header = self ;
+        let mut prev_header_height = self.height ;
+        let mut chain_iter = chain.iter() ;
+        let mut is_verified = true ;
+
+        while let Some(header) = chain_iter.next() {
+            if prev_header_height.saturating_add(1) != header.height {
+                return false;
+            }
+            is_verified &= hash(prev_header) == header.parent && header.state == prev_header.state + header.extrinsic ;
+            prev_header = header ;
+            prev_header_height = header.height ;
+        }
+        is_verified
     }
 }
 
