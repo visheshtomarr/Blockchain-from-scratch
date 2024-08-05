@@ -251,5 +251,8 @@ fn bc_2_verify_forked_chain() {
     assert!(g.verify_sub_chain(&c2[1..]));
 
     // The two chains are not identical
+    // Question for students: I've only compared the last blocks here.
+    // Is that enough? Is it possible that the two chains have the same final block,
+    // but differ somewhere else?
     assert_ne!(c1.last(), c2.last());
 }
