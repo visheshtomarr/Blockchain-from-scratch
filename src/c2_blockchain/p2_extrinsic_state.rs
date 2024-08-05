@@ -35,7 +35,13 @@ impl Header {
 
     /// Create and return a valid child header.
     fn child(&self, extrinsic: u64) -> Self {
-        todo!("Second")
+        Self {
+            parent: hash(self),
+            height: self.height + 1,
+            extrinsic,
+            state: self.state + extrinsic,
+            consensus_digest: (), 
+        }
     }
 
     /// Verify that all the given headers form a valid chain from this header to the tip.
