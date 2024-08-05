@@ -120,5 +120,12 @@ fn build_an_invalid_chain() -> Vec<Header> {
 ///
 /// Side question: What is the fewest number of headers you could create to achieve this goal.
 fn build_forked_chain() -> (Vec<Header>, Vec<Header>) {
-    todo!("Sixth")
+    let g = Header::genesis() ;
+    let b1 = g.child(1) ;
+    let b2 = b1.child(2) ;
+    let b3 = b2.child(3) ;
+
+    let b3_prime = b2.child(4) ;
+
+    (vec![g.clone(), b1.clone(), b2.clone(), b3], vec![g, b1, b2, b3_prime])
 }
