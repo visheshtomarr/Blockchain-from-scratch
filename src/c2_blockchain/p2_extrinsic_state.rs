@@ -74,7 +74,18 @@ impl Header {
 
 /// Build and return a valid chain with the given number of blocks.
 fn build_valid_chain(n: u64) -> Vec<Header> {
-    todo!("Fourth")
+    let g = Header::genesis() ;
+    let mut chain = Vec::new() ;
+
+    let mut prev_block = g ;
+    let mut next_block ;
+
+    for _ in 0..n {
+        next_block = prev_block.child(0) ;
+        chain.push(prev_block);
+        prev_block = next_block ;
+    }
+    chain
 }
 
 /// Build and return a chain with at least three headers.
