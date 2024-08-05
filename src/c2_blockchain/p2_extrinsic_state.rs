@@ -82,7 +82,7 @@ fn build_valid_chain(n: u64) -> Vec<Header> {
 
     for _ in 0..n {
         next_block = prev_block.child(0) ;
-        chain.push(prev_block);
+        chain.push(prev_block) ;
         prev_block = next_block ;
     }
     chain
@@ -99,7 +99,13 @@ fn build_valid_chain(n: u64) -> Vec<Header> {
 /// For this function, ONLY USE the the `genesis()` and `child()` methods to create blocks.
 /// The exercise is still possible.
 fn build_an_invalid_chain() -> Vec<Header> {
-    todo!("Fifth")
+    let g = Header::genesis() ;
+    let b1 = g.child(0) ;
+    let _b2 = b1.child(1) ;
+
+    let b2_prime = b1.child(2) ;
+
+    vec![g, b1, b2_prime]
 }
 
 /// Build and return two header chains.
