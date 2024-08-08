@@ -127,7 +127,26 @@ impl Header {
     /// Verify that the given headers form a valid chain.
     /// In this case, "valid" means that the STATE MUST BE ODD.
     fn verify_sub_chain_odd(&self, chain: &[Header]) -> bool {
-        todo!("Fifth")
+        let mut prev_header = self ;
+        let mut prev_header_height = self.height ;
+        let mut chain_iter = chain.iter() ;
+        let mut is_verified = true ;
+
+        while let Some(header) = chain_iter.next() {
+            if prev_header_height.saturating_add(1) != header.height {
+                return false ;
+            }
+
+            if header.height > FORK_HEIGHT && header.state % 2 == 0 {
+                return false ;
+            }
+
+            is_verified &= header.parent == hash(prev_header) && header.state == prev_header.state + header.extrinsic
+             && hash(header) < THRESHOLD ;
+            prev_header = header ;
+            prev_header_height = header.height ;
+        }
+        is_verified
     }
 }
 
