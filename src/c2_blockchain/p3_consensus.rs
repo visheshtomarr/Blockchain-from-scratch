@@ -76,7 +76,21 @@ impl Header {
     /// In addition to all the rules we had before, we now need to check that the block hash
     /// is below a specific threshold.
     fn verify_sub_chain(&self, chain: &[Header]) -> bool {
-        todo!("Third")
+        let mut prev_header = self ;
+        let mut prev_header_height = self.height ;
+        let mut chain_iter = chain.iter() ;
+        let mut is_verified = true ;
+
+        while let Some(header) = chain_iter.next() {
+            if prev_header_height.saturating_add(1) != header.height {
+                return false ;
+            }
+            is_verified &= header.parent == hash(prev_header) && header.state == prev_header.state + header.extrinsic
+             && hash(header) < THRESHOLD ;
+            prev_header = header ;
+            prev_header_height = header.height ;
+        }
+        is_verified
     }
 
     // After the blockchain ran for a while, a political rift formed in the community.
