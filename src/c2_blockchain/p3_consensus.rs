@@ -5,6 +5,7 @@
 //! 2. Arbitrary / Political rules. Here we will implement two alternate validity rules.
 
 use crate::hash ;
+use rand::Rng ;
 
 // We will use Rust's built-in hashing where the output type is u64. I'll make an alias
 // so that the code is slightly more readable.
@@ -37,7 +38,7 @@ impl Header {
     /// Returns a new valid genesis header.
     fn genesis() -> Self {
         Self {
-            parent: 0,
+            parent: Hash::default(),
             height: 0,
             extrinsic: 0,
             state: 0,
@@ -45,9 +46,29 @@ impl Header {
         }
     }
 
+    /// Returns a random nonce.
+    fn generate_nonce(&self) -> u64 {
+        let mut range = rand::thread_rng() ;
+        return range.gen::<u32>() as u64
+    }
+
     /// Create and return a valid child header.
     fn child(&self, extrinsic: u64) -> Self {
-        todo!("Second")
+        let mut valid_child_header = Self {
+            parent: hash(self),
+            height: self.height + 1,
+            extrinsic,
+            state: self.state + extrinsic,
+            consensus_digest: Hash::default(),
+        } ;
+
+        loop {
+            let nonce = self.generate_nonce() ;
+            valid_child_header.consensus_digest = nonce ;
+            if hash(&valid_child_header) < THRESHOLD {
+                return valid_child_header;
+            }  
+        }
     }
 
     /// Verify that all the given headers form a valid chain from this header to the tip.
