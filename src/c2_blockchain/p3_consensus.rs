@@ -167,5 +167,21 @@ impl Header {
 /// G -- 1 -- 2
 ///            \-- 3'-- 4'
 fn build_contentious_forked_chain() -> (Vec<Header>, Vec<Header>, Vec<Header>) {
-    todo!("Sixth")
+    let g = Header::genesis() ;         // state = 0
+    let b1 = g.child(1) ;       // state = 1
+
+    // Fork will take place on this block.
+    let b2 = b1.child(2) ;      // state = 3
+
+    let common_prefix_chain = vec![g.clone(), b1.clone(), b2.clone()] ;
+
+    let b3_even = b2.child(1) ;     // state => 3 + 1 = 4
+    let b4_even = b3_even.child(2) ;    // state => 4 + 2 = 6
+    let even_suffix_chain = vec![b3_even, b4_even] ;
+
+    let b3_prime_odd = b2.child(2) ;      // state => 3 + 2 = 5
+    let b4_prime_odd = b3_prime_odd.child(4) ;  // state => 5 + 4 = 9
+    let odd_suffix_chain = vec![b3_prime_odd, b4_prime_odd] ;
+
+    (common_prefix_chain, even_suffix_chain, odd_suffix_chain)  
 }
