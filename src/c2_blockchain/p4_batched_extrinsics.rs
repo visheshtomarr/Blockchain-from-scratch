@@ -111,10 +111,25 @@ impl Block {
         }
     }
 
+    /// Returns the state after executing extrinsics.
+    pub fn execute_extrinsics(extrinsics: &Vec<u64>) -> u64 {
+        let mut state = 0 ;
+        for extrinsic in extrinsics {
+            state += extrinsic ;
+        }
+        state
+    }
+
     /// Create and return a valid child block.
     /// The extrinsics are batched now, so we need to execute each one of them.
     pub fn child(&self, extrinsics: Vec<u64>) -> Self {
-        todo!("Sixth")
+        Self {
+            header: self.header.child(
+                hash(&extrinsics),
+                self.header.state + Block::execute_extrinsics(&extrinsics),
+            ),
+            body: extrinsics,
+        }
     }
 
     /// Verify that all the given blocks form a valid chain from this block to the tip.
