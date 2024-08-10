@@ -61,7 +61,13 @@ impl Header {
     /// subtask of checking an entire block. So it doesn't make sense to check
     /// the entire header chain at once if the chain may be invalid at the second block.
     fn verify_child(&self, child: &Header) -> bool {
-        todo!("Third")
+        let parent = self ;
+        let mut is_verified = true ;
+        if parent.height.saturating_add(1) != child.height {
+            return false;
+        }
+        is_verified &= hash(parent) == child.parent &&  parent.state == child.state ;
+        is_verified
     }
 
     /// Verify that all the headers form a valid chain from this header to the tip.
