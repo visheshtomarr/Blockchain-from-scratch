@@ -74,7 +74,19 @@ impl Header {
     ///
     /// We can now trivially write the old verification function in terms of the new one.
     fn verify_sub_chain(&self, chain: &[Header]) -> bool {
-        todo!("Fourth")
+        let mut prev_header = self ;
+        let mut prev_header_height = self.height ;
+        let mut chain_iter = chain.iter() ;
+        let mut is_verified = true ;
+        while let Some(header) = chain_iter.next() {
+            if prev_header_height.saturating_add(1) != header.height {
+                return false ;
+            }
+            is_verified &= hash(prev_header) == header.parent &&  prev_header.state == header.state ;
+            prev_header = header ;
+            prev_header_height = header.height ;
+        }
+        is_verified
     }
 }
 
