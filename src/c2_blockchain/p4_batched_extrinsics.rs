@@ -44,7 +44,13 @@ impl Header {
     /// Without the extrinsics themselves, we cannot calculate the final state,
     /// so that information is passed in.
     pub fn child(&self, extrinsics_root: Hash, state: u64) -> Self {
-        todo!("Second")
+        Self {
+            parent: hash(self),
+            height: self.height + 1,
+            extrinsics_root,
+            state,
+            consensus_digest: 0,
+        }
     }
 
     /// Verify a single child header.
