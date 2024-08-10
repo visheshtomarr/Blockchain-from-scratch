@@ -1,6 +1,8 @@
 //! Untill now, each block has contained just a single extrinsic. Really we would prefer to batch them.
 //! Now, we stop relying solely on headers, and instead, create complete blocks.
 
+use std::{io::Chain, iter};
+
 use crate::hash;
 
 // We will use Rust's built-in hashing where the output type is u64. I'll make an alias
@@ -135,7 +137,19 @@ impl Block {
     /// Verify that all the given blocks form a valid chain from this block to the tip.
     /// We need to verify the headers as well as execute all transactions and check the final state.
     pub fn verify_sub_chain(&self, chain: &[Block]) -> bool {
-        todo!("Seventh")
+        let mut prev_block = self ;
+        let mut chain_iter = chain.iter() ;
+        let mut is_verified = true ;
+        while let Some(curr_block) = chain_iter.next() {
+            if prev_block.header.height.saturating_add(1) != curr_block.header.height {
+                return false ;
+            }
+            // final state in current block = state value of current block + state value of previous block
+            is_verified &= curr_block.header.state == Block::execute_extrinsics(&prev_block.body) + Block::execute_extrinsics(&curr_block.body) &&
+            hash(&curr_block.body) == curr_block.header.extrinsics_root;
+            prev_block = curr_block ; 
+        }
+        is_verified
     }
 }
 
