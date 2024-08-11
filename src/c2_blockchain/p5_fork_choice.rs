@@ -50,7 +50,15 @@ impl ForkChoice for LongestChainRule {
     }
 
     fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
-        todo!("Second")
+        let mut chain_iter = candidate_chains.iter() ;
+        let mut best_chain = chain_iter.next().unwrap() ;
+        
+        while let Some(next_chain) = chain_iter.next() {
+            if next_chain.len() > best_chain.len() {
+                best_chain = next_chain
+            }
+        }
+        best_chain
     }
 }
 
