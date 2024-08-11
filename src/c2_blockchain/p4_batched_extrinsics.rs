@@ -160,5 +160,14 @@ impl Block {
 /// not include actual transaction execution. That means it is possible for a header to be
 /// valid, but the block containing that header to be invalid.
 fn build_invalid_child_block_with_valid_header(parent: &Header) -> Block {
-    todo!("Eighth")
+    // This is a valid child header as it is being created using the child method on a valid header.
+    let valid_child_header = parent.child(hash(&vec![1,2,3,4]), 0) ;
+
+    // This is an invalid block as the extrinsic root inside the block body does not matches the hash of the
+    // batched extrinsics in the header. 
+    let invalid_child_block = Block {
+        header: valid_child_header,
+        body: vec![1,2,3], 
+    } ;
+    invalid_child_block
 }
