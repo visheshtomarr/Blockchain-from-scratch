@@ -52,7 +52,7 @@ impl ForkChoice for LongestChainRule {
     fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
         let mut chain_iter = candidate_chains.iter() ;
         let mut best_chain = chain_iter.next().unwrap() ;
-        
+
         while let Some(next_chain) = chain_iter.next() {
             if next_chain.len() > best_chain.len() {
                 best_chain = next_chain
@@ -72,12 +72,31 @@ impl ForkChoice for LongestChainRule {
 /// conceptually-good-enough formula `work = THRESHOLD - block_hash`.
 pub struct HeaviestChainRule ;
 
+/// Generating a random nonce.
+fn generate_nonce() -> u64 {
+    let mut rng = rand::thread_rng() ;
+    return rng.gen::<u32>() as u64;
+}
+
+/// Creating a valid header according to Proof of Work.
+fn mine_consensus_digest(header: &mut Header, threshold: u64) {
+    let mut valid_header = header.clone() ;
+    loop {
+        let nonce = generate_nonce() ;
+        valid_header.consensus_digest = nonce ;
+        if hash(&valid_header) < threshold {
+            header.consensus_digest = nonce ;
+            break;
+        }
+    }
+}
+
 /// Mutates a block (and its embedded header) to contain more PoW difficulty.
 /// This will be useful for exploring the heaviest chain rule. The expected
 /// usage is that you create a block using the normal `Block.child()` method
 /// and then pass the block to this helper for additional mining.
 fn mine_extra_hard(block: &mut Block, threshold: u64) {
-    todo!("Third")
+    mine_consensus_digest(&mut block.header, threshold)
 }
 
 impl ForkChoice for HeaviestChainRule {
