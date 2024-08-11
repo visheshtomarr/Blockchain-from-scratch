@@ -11,7 +11,6 @@ use super::p4_batched_extrinsics::{Block, Header} ;
 use crate::hash ;
 use rand::Rng ;
 
-
 const THRESHOLD: u64 = u64::max_value() / 100 ;
 
 /// Judge which blockchain is "best" when there are multiple candidates. There are several
@@ -99,9 +98,24 @@ fn mine_extra_hard(block: &mut Block, threshold: u64) {
     mine_consensus_digest(&mut block.header, threshold)
 }
 
+impl HeaviestChainRule {
+    /// Work done on individual chains.
+    fn get_work(chain: &[Header]) -> i64 {
+        let mut work = 0 ;
+        chain.iter().for_each(|header| {
+            work = (work as i64).saturating_add((THRESHOLD - hash(header)) as i64) ;
+        }) ;
+        work
+    }
+}
+
 impl ForkChoice for HeaviestChainRule {
     fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool {
-        todo!("Fourth")
+        let mut is_better = true ;
+        if HeaviestChainRule::get_work(chain_1) < HeaviestChainRule::get_work(chain_2) {
+            is_better &= false ;
+        }
+        is_better
     }
 
     fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
