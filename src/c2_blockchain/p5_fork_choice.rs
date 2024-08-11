@@ -9,6 +9,7 @@
 
 use super::p4_batched_extrinsics::{Block, Header} ;
 use crate::hash ;
+use rand::Rng ;
 
 
 const THRESHOLD: u64 = u64::max_value() / 100 ;
@@ -41,7 +42,11 @@ pub struct LongestChainRule ;
 
 impl ForkChoice for LongestChainRule {
     fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool {
-        todo!("First")
+        let mut is_better = true ;
+        if chain_1.len() < chain_2.len() {
+            is_better &= false ;
+        }
+        is_better
     }
 
     fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
