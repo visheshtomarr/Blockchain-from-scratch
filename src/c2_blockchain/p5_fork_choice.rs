@@ -7,6 +7,8 @@
 //! Since we have nothing to add to the Block or Header data structures in this lesson,
 //! we will import them from the previous lesson.
 
+use std::u64;
+
 use super::p4_batched_extrinsics::{Block, Header} ;
 use crate::hash ;
 use rand::Rng ;
@@ -192,5 +194,32 @@ impl ForkChoice for MostBlocksWithEvenHash {
 /// 2. The suffix chain which is longer (non-overlapping with the common prefix)
 /// 3. The suffix chain with more work (non-overlapping with the common prefix)
 fn create_fork_one_side_longer_other_side_heavier() -> (Vec<Header>, Vec<Header>, Vec<Header>) {
-    todo!("Eighth")
+    let g = Header::genesis() ;
+    let b1 = g.child(hash(&vec![1]), 1) ;
+    let b2 = b1.child(hash(&vec![2]),2) ;
+
+    let common_prefix_chain = vec![g, b1, b2.clone()] ;
+
+    // The blocks with these headers will have less work due to low threshold.
+    let mut b3_longest_chain = b2.child(hash(&vec![1, 2]), 3) ;
+    mine_consensus_digest(&mut b3_longest_chain, u64::MAX / 2) ;    // 1 valid block / 2 blocks
+
+    let mut b4_longest_chain = b3_longest_chain.child(hash(&vec![3, 4]), 10) ;
+    mine_consensus_digest(&mut b4_longest_chain, u64::MAX / 4) ;    // 1 valid block / 4 blocks
+
+    let mut b5_longest_chain = b4_longest_chain.child(hash(&vec![5, 6]), 21) ;
+    mine_consensus_digest(&mut b5_longest_chain, u64::MAX / 6) ;    // 1 valid block / 6 blocks
+
+    // The blocks with these headers will have more work due to high threshold.
+    let mut b3_heaviest_chain = b2.child(hash(&vec![2, 3]), 5) ;
+    mine_consensus_digest(&mut b3_heaviest_chain, u64::MAX / 150) ;     // 1 valid block / 150 blocks
+
+    let mut b4_heaviest_chain = b3_heaviest_chain.child(hash(&vec![4, 5]), 14) ;
+    mine_consensus_digest(&mut b4_heaviest_chain, u64::MAX / 200) ;     // 1 valid block / 200 blocks
+
+    (
+        common_prefix_chain,
+        vec![b3_longest_chain, b4_longest_chain, b5_longest_chain],
+        vec![b3_heaviest_chain, b4_heaviest_chain]
+    )  
 }
