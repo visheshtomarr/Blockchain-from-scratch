@@ -170,7 +170,15 @@ impl ForkChoice for MostBlocksWithEvenHash {
     }
 
     fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
-        todo!("Seventh")
+        let mut chain_iter = candidate_chains.iter() ;
+        let mut best_chain = chain_iter.next().unwrap() ;
+
+        while let Some(next_chain) = chain_iter.next() {
+            if MostBlocksWithEvenHash::count_even_hashes(best_chain) < MostBlocksWithEvenHash::count_even_hashes(next_chain) {
+                best_chain = next_chain ;
+            }
+        }
+        best_chain
     }
 }
 
