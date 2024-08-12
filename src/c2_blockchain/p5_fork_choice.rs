@@ -147,9 +147,26 @@ impl ForkChoice for HeaviestChainRule {
 ///    the most PoA blocks, and ties are broken by the most accumulated work.
 pub struct MostBlocksWithEvenHash ;
 
+impl MostBlocksWithEvenHash {
+    // Calculate blocks with even hashes.
+    fn count_even_hashes(chain: &[Header]) -> usize {
+        let mut count = 0 ;
+        for header in chain.iter() {
+            if hash(&header) % 2 == 0 {
+                count += 1 ;
+            }
+        }
+        count
+    }
+}
+
 impl ForkChoice for MostBlocksWithEvenHash {
     fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool {
-        todo!("Sixth")
+        let mut is_better = true ;
+        if MostBlocksWithEvenHash::count_even_hashes(chain_1) < MostBlocksWithEvenHash::count_even_hashes(chain_2) {
+            is_better &= false ;
+        }
+        is_better
     }
 
     fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
