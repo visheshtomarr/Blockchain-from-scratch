@@ -105,7 +105,7 @@ impl HeaviestChainRule {
     fn get_work(chain: &[Header]) -> i64 {
         let mut work = 0 ;
         chain.iter().for_each(|header| {
-            work = (work as i64).saturating_add((THRESHOLD - hash(header)) as i64) ;
+            work = (work as i64).saturating_add(THRESHOLD as i64 - hash(header) as i64) ;
         }) ;
         work
     }
@@ -222,4 +222,137 @@ fn create_fork_one_side_longer_other_side_heavier() -> (Vec<Header>, Vec<Header>
         vec![b3_longest_chain, b4_longest_chain, b5_longest_chain],
         vec![b3_heaviest_chain, b4_heaviest_chain]
     )  
+}
+
+#[cfg(test)]
+#[test]
+fn bc_5_longest_chain() {
+    let g = Header::genesis() ;
+    let h_a1 = g.child(hash(&vec![1]), 1) ;
+    let h_a2 = h_a1.child(hash(&vec![2]), 2) ;
+    let chain_1 = &[g.clone(), h_a1, h_a2] ;
+
+    let h_b1 = g.child(hash(&[1]), 3) ;
+    let chain_2 = &[g, h_b1] ;
+
+    assert!(LongestChainRule::first_chain_is_better(chain_1, chain_2)) ;
+
+    assert_eq!(LongestChainRule::best_chain(&[chain_1, chain_2]), chain_1) ;
+}
+
+#[test]
+fn bc_5_mine_to_custom_difficulty() {
+    let g = Block::genesis() ;
+    let mut block = g.child(vec![1, 2, 3]) ;
+
+    // We want the custom threshold to be high enough that we don't take forever mining
+    // but low enough that it is unlikely we accidentally meet it with the normal
+    // block creation function.
+    let custom_threshold = u64::max_value() / 1000 ;
+    mine_extra_hard(&mut block, custom_threshold) ;
+
+    assert!(hash(&block.header) < custom_threshold) ;
+}
+
+#[test]
+fn bc_5_heaviest_chain() {
+    let g = Header::genesis();
+
+    let mut i = 0;
+    let h_a1 = loop {
+        let header = g.child(hash(&[i]), i);
+        // Extrinsics root hash must be higher than threshold (less work done)
+        if hash(&header) > THRESHOLD {
+            break header;
+        }
+        i += 1;
+    };
+    let chain_1 = &[g.clone(), h_a1];
+
+    let h_b1 = loop {
+        let header = g.child(hash(&[i]), i);
+        // Extrinsics root hash must be lower than threshold (more work done)
+        if hash(&header) < THRESHOLD {
+            break header;
+        }
+        i += 1;
+    };
+    let chain_2 = &[g, h_b1];
+
+    assert!(HeaviestChainRule::first_chain_is_better(chain_2, chain_1));
+
+    assert_eq!(HeaviestChainRule::best_chain(&[chain_1, chain_2]), chain_2);
+}
+
+#[test]
+fn bc_5_most_even_blocks() {
+    let g = Header::genesis();
+
+    let mut h_a1 = g.child(2, 0);
+    for i in 0..u64::max_value() {
+        h_a1 = g.child(2, i);
+        if hash(&h_a1) % 2 == 0 {
+            break;
+        }
+    }
+    let mut h_a2 = g.child(2, 0);
+    for i in 0..u64::max_value() {
+        h_a2 = h_a1.child(2, i);
+        if hash(&h_a2) % 2 == 0 {
+            break;
+        }
+    }
+    let chain_1 = &[g.clone(), h_a1, h_a2];
+
+    let mut h_b1 = g.child(2, 0);
+    for i in 0..u64::max_value() {
+        h_b1 = g.child(2, i);
+        if hash(&h_b1) % 2 != 0 {
+            break;
+        }
+    }
+    let mut h_b2 = g.child(2, 0);
+    for i in 0..u64::max_value() {
+        h_b2 = h_b1.child(2, i);
+        if hash(&h_b2) % 2 != 0 {
+            break;
+        }
+    }
+    let chain_2 = &[g, h_b1, h_b2];
+
+    assert!(MostBlocksWithEvenHash::first_chain_is_better(
+        chain_1, chain_2
+    ));
+
+    assert_eq!(
+        MostBlocksWithEvenHash::best_chain(&[chain_1, chain_2]),
+        chain_1
+    );
+}
+
+#[test]
+fn bc_5_longest_vs_heaviest() {
+    let (_, longest_chain, pow_chain) = create_fork_one_side_longer_other_side_heavier();
+
+    assert!(LongestChainRule::first_chain_is_better(
+        &longest_chain,
+        &pow_chain
+    ));
+
+    assert_eq!(
+        LongestChainRule::best_chain(&[&longest_chain, &pow_chain]),
+        &longest_chain
+    );
+
+    let (_, longest_chain, pow_chain) = create_fork_one_side_longer_other_side_heavier();
+
+    assert!(HeaviestChainRule::first_chain_is_better(
+        &pow_chain,
+        &longest_chain
+    ));
+
+    assert_eq!(
+        HeaviestChainRule::best_chain(&[&longest_chain, &pow_chain]),
+        &pow_chain
+    );
 }
