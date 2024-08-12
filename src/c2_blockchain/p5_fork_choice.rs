@@ -119,7 +119,15 @@ impl ForkChoice for HeaviestChainRule {
     }
 
     fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
-        todo!("Fifth")
+        let mut chain_iter = candidate_chains.iter() ;
+        let mut best_chain = chain_iter.next().unwrap() ;
+
+        while let Some(next_chain) = chain_iter.next() {
+            if HeaviestChainRule::get_work(next_chain) > HeaviestChainRule::get_work(best_chain) {
+                best_chain = next_chain ;
+            } 
+        }
+        best_chain
     }
 }
 
