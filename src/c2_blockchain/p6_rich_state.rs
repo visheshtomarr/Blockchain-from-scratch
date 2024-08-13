@@ -27,7 +27,7 @@ pub struct State {
 /// the complete state. This hash will allow block verifiers to cryptographically confirm
 /// that they got the same state as the author without having a complete copy of the
 /// author's state.
-
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Header {
     parent: Hash,
     height: u64,
@@ -61,7 +61,13 @@ impl Header {
     /// The state root is passed in similarly to how the complete state
     /// was in the previous section.
     fn child(&self, extrinsics_root: Hash, state_root: Hash) -> Self {
-        todo!("Second")
+        Self {
+            parent: hash(self),
+            height: self.height + 1,
+            extrinsics_root,
+            state_root,
+            consensus_digest: 0,
+        }
     }
 
     /// Verify a single child header.
@@ -76,6 +82,7 @@ impl Header {
 }
 
 /// A complete block is a header and the extrinsics.
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Block {
     pub(crate) header: Header,
     pub(crate) body: Vec<u64>,
