@@ -12,6 +12,8 @@
 //! naming coincidence foreshadows a key abstraction that we will make in a coming chapter.
 
 type Hash = u64 ;
+use std::io::Chain;
+
 use crate::hash ;
 use super::p3_consensus::THRESHOLD ;
 
@@ -80,7 +82,15 @@ impl Header {
 
     /// Verify that all the given headers form a valid chain from this header to the tip.
     fn verify_sub_chain(&self, chain: &[Header]) -> bool {
-        todo!("Fourth")
+        let mut parent_header = self ;
+        let mut chain_iter = chain.iter() ;
+        let mut is_verified = true ;
+
+        while let Some(child_header) = chain_iter.next() {
+            is_verified &= parent_header.verify_child(child_header) ;
+            parent_header = child_header ;
+        }
+        is_verified
     }
 }
 
