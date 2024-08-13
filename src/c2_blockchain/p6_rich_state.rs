@@ -112,6 +112,15 @@ pub struct Block {
 /// These methods also differ from last time because you will need to
 /// calculate state roots to pass to the header-level methods.
 impl Block {
+    /// Execute the extrinsics and calculate state.
+    pub fn execute_extrinsics(pre_state: &mut State, extrinsics: &Vec<u64>) -> State {
+        for extrinsic in extrinsics.iter() {
+            pre_state.sum += *extrinsic ;
+            pre_state.product *= *extrinsic ; 
+        }
+        pre_state.clone()
+    }
+
     /// Returns a valid genesis block. By convention this block has no extrinsics.
     pub fn genesis(genesis_state: &State) -> Self {
         Self {
@@ -122,7 +131,13 @@ impl Block {
 
     /// Create and return a valid child block.
     pub fn child(&self, pre_state: &State, extrinsics: Vec<u64>) -> Self {
-        todo!("Sixth")
+        Self {
+            header: self.header.child(
+                hash(&extrinsics),
+                hash(&Block::execute_extrinsics(&mut pre_state.clone(), &extrinsics))
+            ),
+            body: extrinsics,
+        }
     }
 
     /// Verify that all the given blocks form a valid chain from this block to the tip.
