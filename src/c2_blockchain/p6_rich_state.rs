@@ -114,7 +114,10 @@ pub struct Block {
 impl Block {
     /// Returns a valid genesis block. By convention this block has no extrinsics.
     pub fn genesis(genesis_state: &State) -> Self {
-        todo!("Fifth")
+        Self {
+            header: Header::genesis(hash(genesis_state)),
+            body: Vec::new(),
+        }
     }
 
     /// Create and return a valid child block.
