@@ -72,7 +72,10 @@ impl Header {
 
     /// Verify a single child header.
     fn verify_child(&self, child: &Header) -> bool {
-        todo!("Third")
+        let mut is_verified = true ;
+        let parent_header = self ;
+        is_verified &= hash(parent_header) == child.parent && parent_header.height.saturating_add(1) == child.height ;
+        is_verified    
     }
 
     /// Verify that all the given headers form a valid chain from this header to the tip.
