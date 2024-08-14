@@ -146,7 +146,20 @@ impl Block {
     /// have been given a valid pre-state. And we still need to verify the headers,
     /// execute all transactions, and check the final state.
     pub fn verify_sub_chain(&self, pre_state: &State, chain: &[Block]) -> bool {
-        todo!("Seventh")
+        let mut prev_block = self ;
+        let mut chain_iter = chain.iter() ;
+        let mut is_verified = true ;
+
+        while let Some(curr_block) = chain_iter.next() {
+            // Need to verify that the initial block has a valid pre-state.
+            if (hash(&Block::execute_extrinsics(&mut pre_state.clone(), &prev_block.body)) != 
+                prev_block.header.state_root) {
+                    return false;
+            }
+            is_verified &= prev_block.header.verify_child(&curr_block.header) && 
+                hash(&curr_block.body) == curr_block.header.extrinsics_root ;  
+        }
+        is_verified
     }
 }
 
