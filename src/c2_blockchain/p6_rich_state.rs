@@ -175,5 +175,13 @@ impl Block {
 /// As before, you do not need the entire parent block to do this. You only need the header.
 /// You do, however, now need a pre-state as you have throughout much of this section.
 fn build_invalid_child_block_with_valid_header(parent: &Header, pre_state: &State) -> Block {
-    todo!("Eighth")
+    let state = Block::execute_extrinsics(&mut pre_state.clone(), &vec![1, 2, 3, 4, 5]) ;
+
+    let child_header = parent.child(hash(&vec![1, 2, 3, 4, 5]), hash(&state)) ;
+
+    let child_block = Block {
+        header: child_header,
+        body: vec![1, 2, 3]
+    } ;
+    child_block
 }
